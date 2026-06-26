@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
@@ -21,6 +21,7 @@ app.use('/api/categories', require('./routes/categories'));
 app.use('/api/products', require('./routes/products'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/testimonials', require('./routes/testimonials'));
+app.use('/api/notifications', require('./routes/notifications'));
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/pajama-store')

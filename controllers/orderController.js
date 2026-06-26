@@ -1,6 +1,11 @@
 // controllers/orderController.js
 const Order = require('../models/Order');
 const Product = require('../models/Product');
+const PushToken = require('../models/PushToken');
+const { Expo } = require('expo-server-sdk');
+
+// Create a new Expo SDK client
+let expo = new Expo();
 
 // Get all orders with optional filters
 exports.getAllOrders = async (req, res) => {
@@ -214,6 +219,42 @@ exports.createOrder = async (req, res) => {
         }
 
         await savedOrder.populate('items.product');
+
+        // --- Send Push Notifications for Customer Orders ---
+        if (!isAdminOrder) {
+            try {
+                const tokens = await PushToken.find();
+                let messages = [];
+                for (let pushToken of tokens) {
+                    if (!Expo.isExpoPushToken(pushToken.token)) {
+                        console.error(`Push token ${pushToken.token} is not a valid Expo push token`);
+                        continue;
+                    }
+
+                    messages.push({
+                        to: pushToken.token,
+                        sound: 'default',
+                        title: 'طلب جديد 📦!',
+                        body: `تم استلام طلب جديد بقيمة ${totalAmount} دج.`,
+                        data: { orderId: savedOrder._id },
+                    });
+                }
+
+                let chunks = expo.chunkPushNotifications(messages);
+                let tickets = [];
+                for (let chunk of chunks) {
+                    try {
+                        let ticketChunk = await expo.sendPushNotificationsAsync(chunk);
+                        tickets.push(...ticketChunk);
+                    } catch (error) {
+                        console.error('Error sending push chunk:', error);
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to process push notifications:', err);
+            }
+        }
+        // ---------------------------------------------------
 
         res.status(201).json(savedOrder);
     } catch (error) {
