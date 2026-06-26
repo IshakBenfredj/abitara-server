@@ -90,8 +90,16 @@ const orderSchema = new mongoose.Schema(
 
 orderSchema.pre("save", async function (next) {
   if (!this.orderNumber) {
-    const count = await mongoose.model("Order").countDocuments();
-    this.orderNumber = `ORD${(count + 1).toString().padStart(6, "0")}`;
+    const lastOrder = await mongoose.model("Order").findOne({}, {}, { sort: { orderNumber: -1 } });
+    let nextNumber = 1;
+    if (lastOrder && lastOrder.orderNumber) {
+      const lastNumberStr = lastOrder.orderNumber.replace('ORD', '');
+      const lastNumber = parseInt(lastNumberStr, 10);
+      if (!isNaN(lastNumber)) {
+        nextNumber = lastNumber + 1;
+      }
+    }
+    this.orderNumber = `ORD${nextNumber.toString().padStart(6, "0")}`;
   }
   next();
 });
