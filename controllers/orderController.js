@@ -350,11 +350,23 @@ exports.getOrderStats = async (req, res) => {
 // Delete order permanently
 exports.deleteOrder = async (req, res) => {
     try {
-        const order = await Order.findByIdAndDelete(req.params.id);
+        const order = await Order.findById(req.params.id);
 
         if (!order) {
             return res.status(404).json({ message: 'الطلب غير موجود' });
         }
+
+        // Restore product quantities if not already cancelled
+        if (order.status !== 'cancelled') {
+            for (const item of order.items) {
+                await Product.findByIdAndUpdate(
+                    item.product,
+                    { $inc: { quantity: item.quantity } }
+                );
+            }
+        }
+
+        await Order.findByIdAndDelete(req.params.id);
 
         res.json({ message: 'تم حذف الطلب بنجاح' });
     } catch (error) {
