@@ -6,7 +6,15 @@ const pushTokenSchema = new mongoose.Schema({
         required: true,
         unique: true
     },
+    deviceId: {
+        type: String,
+        default: null
+    },
     createdAt: {
+        type: Date,
+        default: Date.now
+    },
+    updatedAt: {
         type: Date,
         default: Date.now
     }
